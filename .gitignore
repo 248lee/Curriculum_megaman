@@ -1,0 +1,9 @@
+/Qvalues
+/model
+/results.txt
+/last_old_time.txt
+/now_stage.txt
+/now_num_of_actions.txt
+/neurons.txt
+/__pycache__
+/last_buffer.npy

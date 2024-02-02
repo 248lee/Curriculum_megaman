@@ -1,0 +1,41 @@
+-----------------------------LAST STEPS:	0-----------------------------
+stage:	1
+num of actions:	7
+lock mode:	2
+is simple action locked:	False
+is activate boss memory:	False
+is sweet boss:	False
+is RB resumed:	False
+is Brute Explore:	True
+learning rate:	5e-06
+-----------------------------LAST STEPS:	290000-----------------------------
+stage:	1
+num of actions:	7
+lock mode:	0
+is simple action locked:	False
+is activate boss memory:	False
+is sweet boss:	False
+is RB resumed:	False
+is Brute Explore:	False
+learning rate:	1e-06
+-----------------------------LAST STEPS:	290000-----------------------------
+stage:	2
+num of actions:	7
+lock mode:	0
+is simple action locked:	False
+is activate boss memory:	False
+is sweet boss:	False
+is RB resumed:	False
+is Brute Explore:	True
+learning rate:	0.001
+-----------------------------LAST STEPS:	292000-----------------------------
+stage:	2
+num of actions:	7
+lock mode:	0
+is simple action locked:	False
+is activate boss memory:	False
+is sweet boss:	False
+is RB resumed:	False
+is Brute Explore:	True
+learning rate:	1e-05
+-----------------------------

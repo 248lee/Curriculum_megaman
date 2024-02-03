@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# This is modified by johnlee's nb!
 #============================ 导入所需的库 ===========================================
 from __future__ import print_function
 import os 
@@ -15,6 +16,8 @@ from collections import deque
 import matplotlib.pyplot as plt
 import argparse
 from wrapped_megaman import MegaMan
+from sklearn.cluster import KMeans
+from scipy.interpolate import RegularGridInterpolator
 os.environ['CUDA_VISIBLE_DEVICES']='0'
 
 
@@ -130,8 +133,10 @@ class MyNet2(Model):
         y = self.f2(x)
         return y
     def load_stage1(self, stage1_net):
+        interpolated_kernel, k_bias = john_bilinear(stage1_net.c1_1.get_weights()[0], stage1_net.c1_1.get_weights()[1], self.conv2_num_of_filters)
         new_kernel = custom_kernel_stage2(stage1_net, self.conv2_num_of_filters)
         self.c1_1.set_weights([new_kernel, stage1_net.c1_1.get_weights()[1]])
+        self.c2_1.set_weights([interpolated_kernel, k_bias])
         self.f1.set_weights([stage1_net.f1.get_weights()[0], stage1_net.f1.get_weights()[1]])
         self.f2.set_weights(stage1_net.f2.get_weights())
         return
@@ -309,7 +314,7 @@ def trainNetwork(stage, num_of_actions, lock_mode, is_simple_actions_locked, is_
                 stage1_net.load_weights(checkpoint_save_path,by_name=True)
                 net1 = MyNet2(now_num_action)
                 net1.build(input_shape=(1, input_sidelength[0] * 4, input_sidelength[1], 1))
-                net1.load_weights('model/ControlGroup.h5') # Load the weights of the control network in order to gain the c2_1
+                #net1.load_weights('model/ControlGroup.h5') # Load the weights of the control network in order to gain the c2_1
                 net1.load_stage1(stage1_net) # Load the weights of the original network
                 net1.call(Input(shape=(input_sidelength[0] * 4, input_sidelength[1], 1)))
             else: # Train new network for the control group
@@ -364,7 +369,7 @@ def trainNetwork(stage, num_of_actions, lock_mode, is_simple_actions_locked, is_
             #net1.b2.trainable = True
             net1.c2_1.trainable = True
             #net1.b1.trainable = False
-            net1.c1_1.trainable = False
+            net1.c1_1.trainable = True
             #net1.b0.trainable = False
             net1.f1.trainable = False
             net1.f2.trainable = False
@@ -568,7 +573,7 @@ def trainNetwork(stage, num_of_actions, lock_mode, is_simple_actions_locked, is_
         #plt.imshow(x_t_back, cmap='gray')
         #plt.savefig('game.png')
         #input()
-        s_t1 = s_t[(input_sidelength[0]):]
+        s_t1 = s_t[(input_sidelength[0]):] # Delete the first 40(80) rows, which indicates the eldest frame
         s_t1_next = s_t_next[(next_input_sidelength[0]):]
         s_t1 = np.concatenate((s_t1, x_t1), axis=0)
         s_t1_next = np.concatenate((s_t1_next, x_t1_next), axis=0)
@@ -756,8 +761,8 @@ def custom_kernel_stage2(old_net, thickness):
     old_kernel = old_net.c1_1.get_weights()[0].T
     new_kernel = []
     for i in range(len(old_kernel)):
-        tmp = old_kernel[i]
-        tmp_stack = np.array([tmp for i in range(thickness)])
+        tmp = old_kernel[i] / 32
+        tmp_stack = np.array([tmp for _ in range(thickness)])
         sh = tmp_stack.shape
         tmp_stack = tmp_stack.reshape((sh[0] * sh[1], sh[2], sh[3]))
         new_kernel.append(tmp_stack)
@@ -816,6 +821,71 @@ def custom_kernel_stage3(old_net, thickness):
         tmp_stack = tmp_stack.reshape((sh[0] * sh[1], sh[2], sh[3]))
         new_kernel.append(tmp_stack)
     return (np.array(new_kernel).T)
+
+def john_bilinear(oarr, obias, new_num_of_kernels):
+  print(obias.shape)
+  num_of_kernels = oarr.shape[3]
+  interpolated_kernels = []
+  for i in range(num_of_kernels):
+    num_of_channels = oarr.T[i].shape[0]
+    interpolated_piece = []
+    for j in range(num_of_channels):
+      old_kernel = oarr.T[i][j]
+      # print(old_kernel)
+      from scipy.interpolate import RegularGridInterpolator
+      x = np.linspace(0, 1, old_kernel.shape[0])
+      y = np.linspace(0, 1, old_kernel.shape[1])
+
+      interp = RegularGridInterpolator((x, y), old_kernel)
+
+      x_i = np.linspace(0, 1, old_kernel.shape[0] * 2) # therefore, the shape of the interpolated kernel must be even, because of * 2
+      y_i = np.linspace(0, 1, old_kernel.shape[1] * 2)
+      x_i, y_i = np.meshgrid(x_i, y_i)
+      points = np.vstack([x_i.ravel(), y_i.ravel()]).T
+      z_i = interp(points)
+      z_i = z_i.reshape(x_i.shape)
+      interpolated_piece.append(z_i.T)
+    interpolated_piece = np.array(interpolated_piece)
+    interpolated_kernels.append(interpolated_piece)
+
+  # Start Cut the Kernels
+  cut_kernels = []
+  for ik in interpolated_kernels: # for each (4, 6, 6) kernel
+    print(ik.shape[1] / 2)
+    for x in range(0, ik.shape[1], ik.shape[1] // 2): # x will be 0 or 3
+      for y in range(0, ik.shape[2], ik.shape[2] // 2): # y will be 0 or 3
+        cut_pieces = [] # collect all channels
+        for i in range(ik.shape[0]): # iterate through channels, aka [0, 1, 2, 3]
+          cut_piece = np.zeros((ik[i].shape[0] // 2, ik[i].shape[1] // 2))
+          for j in range(0, ik[i].shape[0] // 2): # iterate through the side of the kernel, aka [0, 1, 2]
+            for k in range(0, ik[i].shape[1] // 2): # iterate through the side of the kernel, aka [0, 1, 2]
+              cut_piece[j][k] = ik[i][j + x][k + y] # fill the piece. Remember to add the offset x and y
+          cut_pieces.append(cut_piece)
+        cut_pieces = np.array(cut_pieces) # one kernel has finished cutting! Ready to push? GO!!!
+        cut_kernels.append(cut_pieces)
+  print((interpolated_kernels[5][0]))
+  print('==================================')
+  print((cut_kernels[20][0]))
+  print((cut_kernels[21][0]))
+  print((cut_kernels[22][0]))
+  print((cut_kernels[23][0]))
+  print('===============================')
+  # print(z_i.T)
+  ls = []
+  for i in range(len(cut_kernels)):
+    ls.append(np.append(cut_kernels[i].reshape(-1), obias[i // 4])) # a original kernel is cut into 4 subkernels, so i needs to // 4
+  # print((cut_kernels[23]))
+  # print(ls[23])
+  # ls = np.array(ls)
+  # print(ls.shape)
+  kmeans = KMeans(n_clusters=new_num_of_kernels,n_init='auto',random_state=10,max_iter=1000)
+  kmeans.fit(ls)
+  result = kmeans.cluster_centers_
+  new_bias = result[:, -1]
+  result = result[:, :-1]
+  result = result.reshape((result.shape[0], cut_kernels[0].shape[0], cut_kernels[0].shape[1], cut_kernels[0].shape[2]))
+  print(result.shape)
+  return result.T, new_bias.T
 
 def main():
     trainNetwork()

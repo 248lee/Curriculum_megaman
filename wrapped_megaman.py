@@ -2,10 +2,17 @@ import retro
 from pynput import keyboard
 import numpy as np
 import time
+import os
 pressed = [None]
 meanings = [[None], ['LEFT'], ['RIGHT'], ['A'], ['B'], ['LEFT', 'A'], ['RIGHT', 'A']]
 buttons = ['B', None, 'SELECT', 'START', 'UP', 'DOWN', 'LEFT', 'RIGHT', 'A']
-    
+def is_executed_locally():
+    """
+    Checks if the script is being executed locally or via SSH.
+    Returns True if local, False if via SSH.
+    """
+    return os.name == 'posix' and 'SSH_CLIENT' not in os.environ
+
 def make_env(game, state):
     def _init():
         env = retro.make(
@@ -22,6 +29,8 @@ class MegaMan():
         game = "MegaMan2-Nes"
         self.env = make_env(game, state="boss1.state")()
         self.env.reset()
+        if not is_executed_locally():
+            self.env.render_mode = None
         arr = np.array([False] * self.env.action_space.n)
         arr[1] = True
         obs, _reward, done, truncated, info = self.env.step(arr)

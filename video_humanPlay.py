@@ -59,6 +59,9 @@ input_sidelength = 40
 t = 0
 while t < 650:
     x_t1_colored, r_t, terminal, truncated, info = env.step(pressed)
+    plt.imshow(x_t1_colored)
+    plt.show()
+    input()
     x_t1 = cv2.cvtColor(cv2.resize(x_t1_colored, (input_sidelength, input_sidelength)), cv2.COLOR_RGB2GRAY)
     x_t1 = np.reshape(x_t1, (input_sidelength, input_sidelength, 1))
     if t > 450:

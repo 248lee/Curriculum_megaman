@@ -1,8 +1,12 @@
-import retro
+import tensorflow as tf # CAN YOU BELIEVE? IF YOU DON'T IMPORT TF, THE """"MATPLOTLIB.PYPLOT"""" WILL BROKEN!! WHAT A SWEETY COUPLES~
+
+import matplotlib.pyplot as plt
 from pynput import keyboard
 import numpy as np
 import time
 from wrapped_megaman import MegaMan
+
+
 pressed = np.array([1, 0, 0, 0, 0, 0, 0], dtype=int)
 inputs = [None, 'a', 'd', 'j', 'k', 'q', 'e']
 
@@ -40,9 +44,13 @@ listener = keyboard.Listener(
     on_press=on_press,
     on_release=on_release)
 listener.start()
-while True:
+if True:
     obs, reward, done, truncated, info = env.step(pressed)
     print(pressed)
-    
+    plt.imshow(obs)
+    plt.show()
+    print(obs.shape)
+    plt.imshow(obs[:, :, 0])
+    plt.show()
     #print('boss hp:', info['boss_hp'])
     time.sleep(1 / 5)

@@ -35,6 +35,7 @@ os.environ['CUDA_VISIBLE_DEVICES']='0'
 OBSERVE = 10000 # 训练前观察积累的轮数
 
 side_length_each_stage = [(0, 0), (40, 30), (80, 60), (160, 160)]
+num_of_channels = 2
 tf.debugging.set_log_device_placement(True)
 GAME = 'FlappyBird' # 游戏名称
 ACTIONS_1 = 7
@@ -262,16 +263,16 @@ def trainNetwork(stage, num_of_actions, lock_mode, is_simple_actions_locked, is_
     if stage == 1:
         optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate, epsilon=1e-08)
         net1 = MyNet(now_num_action)
-        net1.build(input_shape=(1, input_sidelength[0] * 4, input_sidelength[1], 1))
-        net1.call(Input(shape=(input_sidelength[0] * 4, input_sidelength[1], 1)))
+        net1.build(input_shape=(1, input_sidelength[0] * 4, input_sidelength[1], num_of_channels))
+        net1.call(Input(shape=(input_sidelength[0] * 4, input_sidelength[1], num_of_channels)))
         if os.path.exists(checkpoint_save_path):
             print('-------------load the model-----------------')
             net1.load_weights(checkpoint_save_path,by_name=True)
         else:
             # Create the experimenting network for the control group
             net2 = MyNet2(ACTIONS_2)
-            net2.build(input_shape=(1, next_input_sidelength[0] * 4, next_input_sidelength[1], 1))
-            net2.call(Input(shape=(next_input_sidelength[0] * 4, next_input_sidelength[1], 1)))
+            net2.build(input_shape=(1, next_input_sidelength[0] * 4, next_input_sidelength[1], num_of_channels))
+            net2.call(Input(shape=(next_input_sidelength[0] * 4, next_input_sidelength[1], num_of_channels)))
             net2.save_weights('model/ControlGroup.h5',save_format='h5') # Finally, save it
             net2_2action = None # Clean the garbage
             print('-------------train new model-----------------')
@@ -307,37 +308,37 @@ def trainNetwork(stage, num_of_actions, lock_mode, is_simple_actions_locked, is_
         net1 = None     
         if stage > now_stage:
             stage1_net = MyNet(now_num_action)
-            stage1_net.build(input_shape=(1, last_input_sidelength[0] * 4, last_input_sidelength[1], 1))
-            stage1_net.call(Input(shape=(last_input_sidelength[0] * 4, last_input_sidelength[1], 1)))
+            stage1_net.build(input_shape=(1, last_input_sidelength[0] * 4, last_input_sidelength[1], num_of_channels))
+            stage1_net.call(Input(shape=(last_input_sidelength[0] * 4, last_input_sidelength[1], num_of_channels)))
             if os.path.exists(checkpoint_save_path):
                 print('-------------load the model and modify to stage2----------------')
                 stage1_net.load_weights(checkpoint_save_path,by_name=True)
                 net1 = MyNet2(now_num_action)
-                net1.build(input_shape=(1, input_sidelength[0] * 4, input_sidelength[1], 1))
+                net1.build(input_shape=(1, input_sidelength[0] * 4, input_sidelength[1], num_of_channels))
                 #net1.load_weights('model/ControlGroup.h5') # Load the weights of the control network in order to gain the c2_1
                 net1.load_stage1(stage1_net) # Load the weights of the original network
-                net1.call(Input(shape=(input_sidelength[0] * 4, input_sidelength[1], 1)))
+                net1.call(Input(shape=(input_sidelength[0] * 4, input_sidelength[1], num_of_channels)))
             else: # Train new network for the control group
                 net1 = MyNet2(now_num_action)
-                net1.build(input_shape=(1, input_sidelength[0] * 4, input_sidelength[1], 1))
-                net1.call(Input(shape=(input_sidelength[0] * 4, input_sidelength[1], 1)))
+                net1.build(input_shape=(1, input_sidelength[0] * 4, input_sidelength[1], num_of_channels))
+                net1.call(Input(shape=(input_sidelength[0] * 4, input_sidelength[1], num_of_channels)))
                 net1.load_weights('model/ControlGroup.h5')
 
         else:
             net1 = MyNet2(now_num_action)
-            net1.build(input_shape=(1, input_sidelength[0] * 4, input_sidelength[1], 1))
-            net1.call(Input(shape=(input_sidelength[0] * 4, input_sidelength[1], 1)))
+            net1.build(input_shape=(1, input_sidelength[0] * 4, input_sidelength[1], num_of_channels))
+            net1.call(Input(shape=(input_sidelength[0] * 4, input_sidelength[1], num_of_channels)))
             if os.path.exists(checkpoint_save_path):
                 print('-------------load the model-----------------')
                 net1.load_weights(checkpoint_save_path,by_name=True)
             else: # Train new network for the control group
                 print('-------------train new model-------------')
                 net1 = MyNet2(now_num_action)
-                net1.build(input_shape=(1, input_sidelength[0] * 4, input_sidelength[1], 1))
-                net1.call(Input(shape=(input_sidelength[0] * 4, input_sidelength[1], 1)))
+                net1.build(input_shape=(1, input_sidelength[0] * 4, input_sidelength[1], num_of_channels))
+                net1.call(Input(shape=(input_sidelength[0] * 4, input_sidelength[1], num_of_channels)))
                 net2 = MyNet2(ACTIONS_2)
-                net2.build(input_shape=(1, input_sidelength[0] * 4, input_sidelength[1], 1))
-                net2.call(Input(shape=(input_sidelength[0] * 4, input_sidelength[1], 1)))
+                net2.build(input_shape=(1, input_sidelength[0] * 4, input_sidelength[1], num_of_channels))
+                net2.call(Input(shape=(input_sidelength[0] * 4, input_sidelength[1], num_of_channels)))
                 net2.load_weights('model/ControlGroup.h5')
                 change3To2(net1, net2)
             
@@ -392,8 +393,8 @@ def trainNetwork(stage, num_of_actions, lock_mode, is_simple_actions_locked, is_
         optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate, epsilon=1e-08)                
         if stage > now_stage:
             stage2_net = MyNet2(now_num_action)
-            stage2_net.build(input_shape=(1, last_input_sidelength[0], last_input_sidelength[1], 4))
-            stage2_net.call(Input(shape=(last_input_sidelength[0], last_input_sidelength[1], 4)))
+            stage2_net.build(input_shape=(1, last_input_sidelength[0], last_input_sidelength[1], num_of_channels))
+            stage2_net.call(Input(shape=(last_input_sidelength[0], last_input_sidelength[1], num_of_channels)))
             if os.path.exists(checkpoint_save_path):
                 print('-------------load the model and modify to stage3-----------------')
                 stage2_net.load_weights(checkpoint_save_path,by_name=True)
@@ -402,13 +403,13 @@ def trainNetwork(stage, num_of_actions, lock_mode, is_simple_actions_locked, is_
                 return
 
             net1 = MyNet3(now_num_action)
-            net1.build(input_shape=(1, input_sidelength[0] * 4, input_sidelength[1], 1))
+            net1.build(input_shape=(1, input_sidelength[0] * 4, input_sidelength[1], num_of_channels))
             net1.load_stage2(stage2_net)
-            net1.call(Input(shape=(input_sidelength[0] * 4, input_sidelength[1], 1)))
+            net1.call(Input(shape=(input_sidelength[0] * 4, input_sidelength[1], num_of_channels)))
         else:
             net1 = MyNet3(now_num_action)
-            net1.build(input_shape=(1, input_sidelength[0] * 4, input_sidelength[1], 1))
-            net1.call(Input(shape=(input_sidelength[0] * 4, input_sidelength[1], 1)))
+            net1.build(input_shape=(1, input_sidelength[0] * 4, input_sidelength[1], num_of_channels))
+            net1.call(Input(shape=(input_sidelength[0] * 4, input_sidelength[1], num_of_channels)))
             if os.path.exists(checkpoint_save_path):
                 print('-------------load the model-----------------')
                 net1.load_weights(checkpoint_save_path,by_name=True)
@@ -489,10 +490,10 @@ def trainNetwork(stage, num_of_actions, lock_mode, is_simple_actions_locked, is_
     do_nothing[0] = 1
     x_t, r_0, terminal, _, _ = game_state.step(do_nothing)
     x_t_next = np.copy(x_t)
-    x_t = cv2.cvtColor(cv2.resize(x_t, (input_sidelength[1], input_sidelength[0])), cv2.COLOR_RGB2GRAY)
-    x_t = x_t.reshape((x_t.shape[0], x_t.shape[1], 1))
-    x_t_next = cv2.cvtColor(cv2.resize(x_t_next, (next_input_sidelength[1], next_input_sidelength[0])), cv2.COLOR_RGB2GRAY)
-    x_t_next = x_t_next.reshape((x_t_next.shape[0], x_t_next.shape[1], 1))
+    x_t = cv2.resize(x_t, (input_sidelength[1], input_sidelength[0]))
+    x_t = np.stack((cv2.cvtColor(x_t, cv2.COLOR_RGB2GRAY), x_t[:, :, 0]), axis=2)
+    x_t_next = cv2.resize(x_t_next, (next_input_sidelength[1], next_input_sidelength[0]))
+    x_t_next = np.stack((cv2.cvtColor(x_t_next, cv2.COLOR_RGB2GRAY), x_t_next[:, :, 0]),  axis=2)
     #ret, x_t = cv2.threshold(x_t,1,255,cv2.THRESH_BINARY)
     s_t = np.concatenate((x_t, x_t, x_t, x_t), axis=0)
     s_t_next = np.concatenate((x_t_next, x_t_next, x_t_next, x_t_next), axis=0)
@@ -508,8 +509,8 @@ def trainNetwork(stage, num_of_actions, lock_mode, is_simple_actions_locked, is_
     avg_scores_1000steps = []
 
     t_train = 0
-    net1_target.build(input_shape=(1, input_sidelength[0] * 4, input_sidelength[1], 1))
-    net1_target.call(Input(shape=(input_sidelength[0] * 4, input_sidelength[1], 1)))
+    net1_target.build(input_shape=(1, input_sidelength[0] * 4, input_sidelength[1], num_of_channels))
+    net1_target.call(Input(shape=(input_sidelength[0] * 4, input_sidelength[1], num_of_channels)))
     net1_target.set_weights(net1.get_weights())
     fall_action_effect_len = 20
     fall_action_effect_frame = fall_action_effect_len
@@ -563,11 +564,12 @@ def trainNetwork(stage, num_of_actions, lock_mode, is_simple_actions_locked, is_
         print(a_t_to_game)
         
         a_t = np.argmax(a_t_to_game, axis=0)
-        x_t1 = cv2.cvtColor(cv2.resize(x_t1_colored, (input_sidelength[1], input_sidelength[0])), cv2.COLOR_RGB2GRAY)
-        x_t1_next = cv2.cvtColor(cv2.resize(x_t1_colored, (next_input_sidelength[1], next_input_sidelength[0])), cv2.COLOR_RGB2GRAY) # this is for the replay buffer that will be writen into the drive
+        x_t1 = cv2.resize(x_t1_colored, (input_sidelength[1], input_sidelength[0]))
+        x_t1 = np.stack((cv2.cvtColor(x_t1, cv2.COLOR_RGB2GRAY), x_t1[:, :, 0]), axis=2)
+        x_t1_next = cv2.resize(x_t1_colored, (next_input_sidelength[1], next_input_sidelength[0])) # this is for the replay buffer that will be writen into the drive
+        x_t1_next = np.stack((cv2.cvtColor(x_t1_next, cv2.COLOR_RGB2GRAY), x_t1_next[:, :, 0]), axis=2)
+        
         #ret, x_t1 = cv2.threshold(x_t1, 1, 255, cv2.THRESH_BINARY)
-        x_t1 = np.reshape(x_t1, (x_t1.shape[0], x_t1.shape[1], 1))
-        x_t1_next = np.reshape(x_t1_next, (x_t1_next.shape[0], x_t1_next.shape[1], 1))
         
         #x_t_back = x_t1 * 64 + mea
         #plt.imshow(x_t_back, cmap='gray')

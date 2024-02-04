@@ -730,7 +730,18 @@ def trainNetwork(stage, num_of_actions, lock_mode, is_simple_actions_locked, is_
             b_done = [d[4] for d in minibatch]
             b_done = tf.stack(b_done, axis=0)
 
-            q_next = tf.reduce_max(net1_target(b_s_, training=True), axis=1)
+            """
+            Below is for the Double DQN
+            """
+            online_readout_t = net1(b_s_, training=True)
+            online_action = np.argmax(online_readout_t, axis=1, keepdims=True) # shape: (BATCH, )
+            # print(online_action.shape)
+            # print(b_a.shape)
+            target_q_output = net1_target(b_s_, training=True)
+            target_index = tf.expand_dims(tf.constant(np.arange(0, BATCH), dtype=tf.int32), 1)
+            target_index_b_a = tf.concat((target_index, online_action), axis=1)
+            q_next = tf.gather_nd(target_q_output, target_index_b_a) # shape: (BATCH, )
+            # q_next = tf.reduce_max(net1_target(b_s_, training=True), axis=1) # shape: (BATCH, )
             q_truth = b_r + GAMMA * q_next* (tf.ones(BATCH) - b_done)
 
             # 训练
@@ -821,6 +832,7 @@ def trainNetwork(stage, num_of_actions, lock_mode, is_simple_actions_locked, is_
         # Count episodes
         if terminal:
             num_of_episode = num_of_episode + 1
+        print("D's length:", len(D))
         
 
 

@@ -35,8 +35,8 @@ class MyWindow(QWidget):
 
         self.num_actions_label = QLabel('Select Num of Actions:')
         self.num_actions_combo = QComboBox()
-        self.num_actions_combo.addItem('7')
-        self.num_actions_combo.addItem('7')
+        self.num_actions_combo.addItem('8')
+        self.num_actions_combo.addItem('8')
 
         # Create three radio buttons for lockmode
         self.lockmode_label = QLabel('Lock Mode:')
@@ -257,7 +257,7 @@ class MyWindow(QWidget):
         now_stage_file.write("1")
         now_stage_file.close()
         now_num_of_ac_file = open('now_num_of_actions.txt', 'w')
-        now_num_of_ac_file.write('7')
+        now_num_of_ac_file.write('8')
         now_num_of_ac_file.close()
         training_param_history_file = open('training_history.txt', 'w')
         training_param_history_file.write('-----------------------------')

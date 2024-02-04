@@ -7,15 +7,15 @@ import time
 from wrapped_megaman import MegaMan
 
 
-pressed = np.array([1, 0, 0, 0, 0, 0, 0], dtype=int)
-inputs = [None, 'a', 'd', 'j', 'k', 'q', 'e']
+pressed = np.array([1, 0, 0, 0, 0, 0, 0, 0], dtype=int)
+inputs = [None, 'a', 'd', 'j', 'k', 'q', 'e', 'r']
 
 def on_press(key):
     try:
         global pressed
         for i in range(len(inputs)):
             if inputs[i] == key.char:
-                pressed = np.zeros(7)
+                pressed = np.zeros(8)
                 pressed[i] = int(1)
                 print(pressed)
             else:
@@ -44,13 +44,13 @@ listener = keyboard.Listener(
     on_press=on_press,
     on_release=on_release)
 listener.start()
-if True:
+while True:
     obs, reward, done, truncated, info = env.step(pressed)
     print(pressed)
-    plt.imshow(obs)
-    plt.show()
-    print(obs.shape)
-    plt.imshow(obs[:, :, 0])
-    plt.show()
+    # plt.imshow(obs)
+    # plt.show()
+    # print(obs.shape)
+    # plt.imshow(obs[:, :, 0])
+    # plt.show()
     #print('boss hp:', info['boss_hp'])
-    time.sleep(1 / 5)
+    time.sleep(1 / 30)

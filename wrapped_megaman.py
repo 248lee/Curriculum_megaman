@@ -4,7 +4,7 @@ import numpy as np
 import time
 import os
 pressed = [None]
-meanings = [[None], ['LEFT'], ['RIGHT'], ['A'], ['B'], ['LEFT', 'A'], ['RIGHT', 'A']]
+meanings = [[None], ['LEFT'], ['RIGHT'], ['A'], ['B'], ['LEFT', 'A'], ['RIGHT', 'A'], ['A', 'B']]
 buttons = ['B', None, 'SELECT', 'START', 'UP', 'DOWN', 'LEFT', 'RIGHT', 'A']
 def is_executed_locally():
     """
@@ -65,10 +65,10 @@ class MegaMan():
 
         done = False
         if self.current_boss_hp <= 0 or self.current_player_hp <= 0:
-            # if self.current_boss_hp <= 0:
-            #     reward = 4 + self.current_player_hp
-            # elif self.current_player_hp <= 0:
-            #     reward = -4 - self.current_boss_hp
+            if self.current_boss_hp <= 0:
+                reward = 4 + self.current_player_hp
+            elif self.current_player_hp <= 0:
+                reward = -4 - self.current_boss_hp
             done = True
             self.env.reset()
         return obs, reward, done, truncated, info

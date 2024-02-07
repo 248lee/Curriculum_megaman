@@ -39,7 +39,7 @@ class MegaMan():
         self.current_boss_hp = info['boss_hp']
         self.is_pressing_jump = False
 
-    def step(self, action):
+    def step(self, action):            
         if sum(action) != 1:
             raise ValueError('Multiple input actions!')
         for i in range(len(action)):
@@ -54,7 +54,6 @@ class MegaMan():
             self.is_pressing_jump = True
         else:
             self.is_pressing_jump = False
-
         obs, _reward, _done, truncated, info = self.env.step(arr)
         
         # Create a 10x10 pure green square
@@ -77,7 +76,6 @@ class MegaMan():
         print(player_X, player_Y)
         #obs[player_Y - 35:player_Y, player_X:player_X + 25] = green_square
 
-        four_obs = (np.stack((obs, obs, obs, obs)))
         # Define the RGB values to be replaced with black
         image = obs[player_Y - 35:player_Y, player_X:player_X + 25]
         target_colors = [
@@ -96,8 +94,12 @@ class MegaMan():
                         # Replace the pixel color with black
                         image[y, x] = [50, 255, 87]
         obs[player_Y - 35:player_Y, player_X:player_X + 25] = image
-        damage_to_boss = -(info['boss_hp'] - self.current_boss_hp)
-        damage_to_player = -(info['health'] - self.current_player_hp)
+
+        _, _, _, _, info2 = self.env.step(arr)
+        damage_to_boss1 = -(info['boss_hp'] - self.current_boss_hp)
+        damage_to_player1 = -(info['health'] - self.current_player_hp)
+        damage_to_boss2 = -(info2['boss_hp'] - self.current_boss_hp)
+        damage_to_player2 = -(info2['health'] - self.current_player_hp)
 
         if info['is_invincible'] != 0:
             reward = 0
@@ -106,22 +108,24 @@ class MegaMan():
             image_height, image_width, _ = obs.shape
             obs[0:20, image_width - 20:] = red_square
         else:
-            if damage_to_boss != 0 or damage_to_player != 0:
-                reward = damage_to_boss * 2 - damage_to_player
+            if damage_to_boss1 != 0 or damage_to_player1 != 0 or damage_to_boss2 != 0 or damage_to_player2 != 0:
+                reward = (damage_to_boss1 + damage_to_boss2) * 2 - (damage_to_player1 + damage_to_player2)
             else:
                 reward = 0.38
 
-        self.current_boss_hp = info['boss_hp']
-        self.current_player_hp = info['health']
+        self.current_boss_hp = info2['boss_hp'] # update boss hp
+        self.current_player_hp = info2['health'] # update player hp
 
         done = False
-        if self.current_boss_hp <= 0 or self.current_player_hp <= 0:
+        if info['boss_hp'] <= 0 or info['health'] <= 0 or info2['boss_hp'] <= 0 or info2['health'] <= 0:
             # if self.current_boss_hp <= 0:
             #     reward = 4 + self.current_player_hp
             # elif self.current_player_hp <= 0:
             #     reward = -4 - self.current_boss_hp
             done = True
             self.env.reset()
+
+        
         return obs, reward, done, truncated, info
     
     def reset(self):

@@ -3,7 +3,7 @@
 #============================ 导入所需的库 ===========================================
 from __future__ import print_function
 import os 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # Ask the tensorflow to shut up. IF you disable this, a bunch of logs from tensorflow will put you down when you're using colab.
+#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # Ask the tensorflow to shut up. IF you disable this, a bunch of logs from tensorflow will put you down when you're using colab.
 import tensorflow as tf
 from threading import Event
 from keras import Model, Input
@@ -37,8 +37,8 @@ conv1_num_of_filters = 32
 # isTrain = args.isTrain
 OBSERVE = 10000 # 训练前观察积累的轮数
 
-side_length_each_stage = [(0, 0), (40, 40), (80, 80), (80, 80), (80, 80)]
-num_of_channels = 2
+side_length_each_stage = [(0, 0), (50, 50), (100, 100), (100, 100), (100, 100)]
+num_of_channels = 3
 tf.debugging.set_log_device_placement(True)
 GAME = 'FlappyBird' # 游戏名称
 ACTIONS_1 = 8
@@ -65,6 +65,11 @@ class MyNet(Model):
         self.b0 = None#BatchNormalization(name='batch0')  # BN层
         self.a1_1 = Activation('relu', name='relu_1')  # 激活层
         self.p1 = MaxPool2D(pool_size=(2, 2), strides=2, padding='same', name='padding_1')  # 池化层
+        self.c1_2 = Conv2D(filters=conv1_num_of_filters, kernel_size=(3, 3), padding='same', name='conv_1_2', 
+                           kernel_initializer=tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.01, seed=None),
+                           bias_initializer = tf.keras.initializers.Constant(value=0.01))  # 卷积层
+        self.a1_2 = Activation('relu', name='relu_1_2')  # 激活层
+        self.p1_2 = MaxPool2D(pool_size=(2, 2), strides=2, padding='same', name='padding_1_2')  # 池化层
         #self.d1 = Dropout(0.2)  # dropout层
 
         self.flatten = Flatten()
@@ -83,7 +88,9 @@ class MyNet(Model):
         #x = self.b0(x)
         x = self.a1_1(x)
         x = self.p1(x)
-
+        x = self.c1_2(x)
+        x = self.a1_2(x)
+        x = self.p1_2(x)
         x = self.flatten(x)
         x = self.f1(x)
         y = self.f2(x)
@@ -117,10 +124,15 @@ class MyNet2(Model):
         self.b0 = None#BatchNormalization(name='batch0')  # BN层
         self.a1_1 = Activation('relu', name='relu_1')  # 激活层
         self.p1 = MaxPool2D(pool_size=(2, 2), strides=2, padding='same', name='padding_1')  # 池化层
+        self.c1_2 = Conv2D(filters=conv1_num_of_filters, kernel_size=(3, 3), padding='same', name='conv_1_2', 
+                           kernel_initializer=tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.01, seed=None),
+                           bias_initializer = tf.keras.initializers.Constant(value=0.01))  # 卷积层
+        self.a1_2 = Activation('relu', name='relu_1_2')  # 激活层
+        self.p1_2 = MaxPool2D(pool_size=(2, 2), strides=2, padding='same', name='padding_1_2')  # 池化层
         #self.d1 = Dropout(0.2)  # dropout层
 
         self.flatten = Flatten()
-        self.f1 = Dense(512, activation='relu', name='dense1',
+        self.f1 = Dense(512, activation='tanh', name='dense1',
                            kernel_initializer=tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.01, seed=None),
                            bias_initializer = tf.keras.initializers.Constant(value=0.01))
         self.f2 = Dense(num_of_actions, activation=None, name='dense2',
@@ -137,6 +149,9 @@ class MyNet2(Model):
         #x = self.b0(x)
         x = self.a1_1(x)
         x = self.p1(x)
+        x = self.c1_2(x)
+        x = self.a1_2(x)
+        x = self.p1_2(x)
 
         x = self.flatten(x)
         x = self.f1(x)
@@ -149,10 +164,11 @@ class MyNet2(Model):
             print("ERROR! You should provide stage1_net when calling the constructor of MyNet2!!")
             input()
             return
-        interpolated_kernel, k_bias = john_bilinear(stage1_net.c1_1.get_weights()[0], stage1_net.c1_1.get_weights()[1], self.conv2_num_of_filters)
+        interpolated_kernel, k_bias = john_bilinear(stage1_net.c1_1.get_weights()[0], stage1_net.c1_1.get_weights()[1], conv2_num_of_filters)
         # new_kernel = custom_kernel_stage2(self.stage1_net, self.conv2_num_of_filters)
         # self.c1_1.set_weights([new_kernel, self.stage1_net.c1_1.get_weights()[1]])
         self.c2_1.set_weights([interpolated_kernel, k_bias])
+        self.c1_2.set_weights(stage1_net.c1_2.get_weights()[0], stage1_net.c1_2.get_weights()[1])
         self.f1.set_weights([stage1_net.f1.get_weights()[0], stage1_net.f1.get_weights()[1]])
         self.f2.set_weights(stage1_net.f2.get_weights())
         return
@@ -188,10 +204,15 @@ class MyNet3(Model):
         self.b0 = None#BatchNormalization(name='batch0')  # BN层
         self.a1_1 = Activation('relu', name='relu_1')  # 激活层
         self.p1 = MaxPool2D(pool_size=(2, 2), strides=2, padding='same', name='padding_1')  # 池化层
+        self.c1_2 = Conv2D(filters=conv1_num_of_filters, kernel_size=(3, 3), padding='same', name='conv_1_2', 
+                           kernel_initializer=tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.01, seed=None),
+                           bias_initializer = tf.keras.initializers.Constant(value=0.01))  # 卷积层
+        self.a1_2 = Activation('relu', name='relu_1_2')  # 激活层
+        self.p1_2 = MaxPool2D(pool_size=(2, 2), strides=2, padding='same', name='padding_1_2')  # 池化层
         #self.d1 = Dropout(0.2)  # dropout层
 
         self.flatten = Flatten()
-        self.f1 = Dense(512, activation='relu', name='dense1',
+        self.f1 = Dense(512, activation='tanh', name='dense1',
                            kernel_initializer=tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.01, seed=None),
                            bias_initializer = tf.keras.initializers.Constant(value=0.01))
         self.f2 = Dense(num_of_actions, activation=None, name='dense2',
@@ -211,7 +232,9 @@ class MyNet3(Model):
         #x = self.b0(x)
         x = self.a1_1(x)
         x = self.p1(x)
-
+        x = self.c1_2(x)
+        x = self.a1_2(x)
+        x = self.p1_2(x)
         x = self.flatten(x)
         x = self.f1(x)
         y = self.f2(x)
@@ -228,6 +251,7 @@ class MyNet3(Model):
         # self.c1_1.set_weights([new_kernel, self.stage1_net.c1_1.get_weights()[1]])
         self.c3_1.set_weights([interpolated_kernel, k_bias])
         self.c1_1.set_weights(stage2_net.c1_1.get_weights())
+        self.c1_2.set_weights(stage2_net.c1_2.get_weights()[0], stage2_net.c1_2.get_weights()[1])
         self.f1.set_weights([stage2_net.f1.get_weights()[0], stage2_net.f1.get_weights()[1]])
         self.f2.set_weights(stage2_net.f2.get_weights())
         return
@@ -400,6 +424,7 @@ def trainNetwork(stage, num_of_actions, lock_mode, is_simple_actions_locked, is_
             net1.c2_1.trainable = False
             #net1.b1.trainable = False
             net1.c1_1.trainable = True
+            net1.c1_2.trainable = False
             #net1.b0.trainable = False
             net1.f1.trainable = False
             net1.f2.trainable = False
@@ -408,12 +433,14 @@ def trainNetwork(stage, num_of_actions, lock_mode, is_simple_actions_locked, is_
             net1.c2_1.trainable = False
             #net1.b1.trainable = False
             net1.c1_1.trainable = False
+            net1.c1_2.trainable = False
             #net1.b0.trainable = False
             net1.f1.trainable = False
             net1.f2.trainable = True
         elif lock_mode == 2: # everything is unlocked
             net1.c2_1.trainable = True
             net1.c1_1.trainable = True
+            net1.c1_2.trainable = True
             net1.f1.trainable = True
             net1.f2.trainable = True
 
@@ -491,6 +518,7 @@ def trainNetwork(stage, num_of_actions, lock_mode, is_simple_actions_locked, is_
             net1.c2_1.trainable = True
             #net1.b1.trainable = False
             net1.c1_1.trainable = False
+            net1.c1_2.trainable = False
             #net1.b0.trainable = False
             net1.f1.trainable = False
             net1.f2.trainable = False
@@ -501,6 +529,7 @@ def trainNetwork(stage, num_of_actions, lock_mode, is_simple_actions_locked, is_
             net1.c2_1.trainable = False
             #net1.b1.trainable = False
             net1.c1_1.trainable = False
+            net1.c1_2.trainable = False
             #net1.b0.trainable = False
             net1.f1.trainable = False
             net1.f2.trainable = True
@@ -508,6 +537,7 @@ def trainNetwork(stage, num_of_actions, lock_mode, is_simple_actions_locked, is_
             net1.c3_1.trainable = True
             net1.c2_1.trainable = True
             net1.c1_1.trainable = True
+            net1.c1_2.trainable = True
             net1.f1.trainable = True
             net1.f2.trainable = True
 
@@ -553,9 +583,9 @@ def trainNetwork(stage, num_of_actions, lock_mode, is_simple_actions_locked, is_
     x_t, r_0, terminal, _, _ = game_state.step(do_nothing)
     x_t_next = np.copy(x_t)
     x_t = cv2.resize(x_t, (input_sidelength[1], input_sidelength[0]))
-    x_t = np.stack((cv2.cvtColor(x_t, cv2.COLOR_RGB2GRAY), x_t[:, :, 0]), axis=2)
+    x_t = np.stack((cv2.cvtColor(x_t, cv2.COLOR_RGB2GRAY), x_t[:, :, 0], x_t[:, :, 1]), axis=2)
     x_t_next = cv2.resize(x_t_next, (next_input_sidelength[1], next_input_sidelength[0]))
-    x_t_next = np.stack((cv2.cvtColor(x_t_next, cv2.COLOR_RGB2GRAY), x_t_next[:, :, 0]),  axis=2)
+    x_t_next = np.stack((cv2.cvtColor(x_t_next, cv2.COLOR_RGB2GRAY), x_t_next[:, :, 0], x_t_next[:, :, 1]),  axis=2)
     #ret, x_t = cv2.threshold(x_t,1,255,cv2.THRESH_BINARY)
     s_t = np.concatenate((x_t, x_t, x_t, x_t), axis=0)
     s_t_next = np.concatenate((x_t_next, x_t_next, x_t_next, x_t_next), axis=0)
@@ -607,7 +637,7 @@ def trainNetwork(stage, num_of_actions, lock_mode, is_simple_actions_locked, is_
         elif random.random() <= epsilon:
             if is_brute_exploring:
                 print("----------Start Brute Exploring----------")
-                bruted_len = (int)(brute_exploring_rng.uniform(low=1, high=10))
+                bruted_len = (int)(brute_exploring_rng.uniform(low=1, high=60))
                 num_of_bruted_frames = 0
                 action_index = random.randrange(num_of_actions)
                 a_t_to_game[action_index] = 1
@@ -630,16 +660,17 @@ def trainNetwork(stage, num_of_actions, lock_mode, is_simple_actions_locked, is_
         
         a_t = np.argmax(a_t_to_game, axis=0)
         x_t1 = cv2.resize(x_t1_colored, (input_sidelength[1], input_sidelength[0]))
-        x_t1 = np.stack((cv2.cvtColor(x_t1, cv2.COLOR_RGB2GRAY), x_t1[:, :, 0]), axis=2)
+        # plt.imshow(cv2.cvtColor(x_t1, cv2.COLOR_RGB2GRAY), cmap='gray')
+        # plt.savefig('game.png')
+        # input()
+        x_t1 = np.stack((cv2.cvtColor(x_t1, cv2.COLOR_RGB2GRAY), x_t1[:, :, 0], x_t1[:, :, 1]), axis=2)
         x_t1_next = cv2.resize(x_t1_colored, (next_input_sidelength[1], next_input_sidelength[0])) # this is for the replay buffer that will be writen into the drive
-        x_t1_next = np.stack((cv2.cvtColor(x_t1_next, cv2.COLOR_RGB2GRAY), x_t1_next[:, :, 0]), axis=2)
+        x_t1_next = np.stack((cv2.cvtColor(x_t1_next, cv2.COLOR_RGB2GRAY), x_t1_next[:, :, 0], x_t1_next[:, :, 1]), axis=2)
         
         #ret, x_t1 = cv2.threshold(x_t1, 1, 255, cv2.THRESH_BINARY)
         
         #x_t_back = x_t1 * 64 + mea
-        #plt.imshow(x_t_back, cmap='gray')
-        #plt.savefig('game.png')
-        #input()
+        
         s_t1 = s_t[(input_sidelength[0]):] # Delete the first 40(80) rows, which indicates the eldest frame
         s_t1_next = s_t_next[(next_input_sidelength[0]):]
         s_t1 = np.concatenate((s_t1, x_t1), axis=0)

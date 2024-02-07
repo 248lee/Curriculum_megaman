@@ -44,13 +44,16 @@ listener = keyboard.Listener(
     on_press=on_press,
     on_release=on_release)
 listener.start()
+t = 0
 while True:
     obs, reward, done, truncated, info = env.step(pressed)
     print(pressed)
-    # plt.imshow(obs)
-    # plt.show()
+    if info['is_invincible']:
+        plt.imshow(obs)
+        plt.show()
     # print(obs.shape)
     # plt.imshow(obs[:, :, 0])
     # plt.show()
     #print('boss hp:', info['boss_hp'])
+    t += 1
     time.sleep(1 / 30)

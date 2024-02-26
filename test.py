@@ -1,16 +1,34 @@
-import tensorflow as tf
+import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
+def rgb_to_grayscale(rgb_image):
+    # Convert RGB image to grayscale
+    grayscale_image = rgb_image.convert('L')
+    return grayscale_image
 
-# Assuming tensor is your 3D TensorFlow tensor with shape (2, 3, 3)
-tensor = tf.constant([[[0, 1, 2],
-                       [3, 0, 4],
-                       [0, 5, 0]],
-                      [[0, 0, 0],
-                       [0, 0, 0],
-                       [0, 0, 0]]], dtype=tf.float32)
+def load_image_to_numpy(file_path):
+    # Open the image file
+    image = Image.open(file_path)
+    
+    # Convert the image to grayscale
+    grayscale_image = rgb_to_grayscale(image)
+    
+    # Convert grayscale image to numpy array
+    grayscale_array = np.array(grayscale_image)
+    
+    # Apply threshold operation
+    thresholded_array = np.where(grayscale_array > 0, 255, 0)
+    
+    return thresholded_array
 
-# Check if all elements along axis-0 are zero
-mask = tf.reduce_all(tf.equal(tensor, 0), axis=0)
-mask = tf.equal(mask, False)
-# Convert True values to 0 and False values to 1
-mask = tf.cast(mask, dtype=tensor.dtype)
-print(mask)
+# Replace 'image.png' with the path to your PNG image file
+file_path = 'heart.png'
+
+# Load image and convert it to numpy array
+grayscale_array = load_image_to_numpy(file_path)
+
+# Display the shape of the numpy array
+plt.imshow(grayscale_array)
+plt.show()
+
+print(np.max(grayscale_array))

@@ -7,15 +7,15 @@ import time
 from wrapped_megaman import MegaMan
 
 
-pressed = np.array([1, 0, 0, 0, 0, 0, 0, 0], dtype=int)
-inputs = [None, 'a', 'd', 'j', 'k', 'q', 'e', 'r']
+pressed = np.array([1, 0, 0, 0], dtype=int)
+inputs = [None, 'a', 'd', 'j']
 
 def on_press(key):
     try:
         global pressed
         for i in range(len(inputs)):
             if inputs[i] == key.char:
-                pressed = np.zeros(8)
+                pressed = np.zeros(4)
                 pressed[i] = int(1)
                 print(pressed)
             else:
@@ -48,9 +48,9 @@ t = 0
 while True:
     obs, reward, done, truncated, info = env.step(pressed)
     print(pressed)
-    if info['is_invincible']:
-        plt.imshow(obs)
-        plt.show()
+    # if info['is_invincible']:
+    #     plt.imshow(obs)
+    #     plt.show()
     # print(obs.shape)
     # plt.imshow(obs[:, :, 0])
     # plt.show()
